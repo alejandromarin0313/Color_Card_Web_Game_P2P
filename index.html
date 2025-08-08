@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>UNO P2P (PeerJS)</title>
+  <link rel="stylesheet" href="styles.css"/>
+  <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+</head>
+<body>
+  <div id="app">
+    <div id="https-warning" class="banner" style="display:none;">WebRTC requires <b>HTTPS</b> or <b>localhost</b>. You are not on HTTPS — connections may fail.</div>
+    <!-- AUTH VIEW -->
+    <section id="view-auth" class="view active">
+      <div class="card">
+        <h1>UNO P2P</h1>
+        <p class="muted">Simple login (local only)</p>
+        <form id="auth-form">
+          <label>Username</label>
+          <input id="auth-username" required placeholder="e.g. alex"/>
+          <label>Password</label>
+          <input id="auth-password" type="password" required placeholder="••••••"/>
+          <button type="submit">Login / Register</button>
+        </form>
+      </div>
+    </section>
+
+    <!-- MENU VIEW -->
+    <section id="view-menu" class="view">
+      <div class="card">
+        <div class="row between center">
+          <h2>Welcome, <span id="me-name"></span></h2>
+          <button id="logout-btn" class="ghost">Logout</button>
+        </div>
+        <div class="grid two">
+          <div class="card inset">
+            <h3>Create Game</h3>
+            <button id="create-room-btn">Create room</button>
+            <p class="muted small">You'll get a room code to share.</p>
+          </div>
+          <div class="card inset">
+            <h3>Join Game</h3>
+            <form id="join-form">
+              <label>Room Code</label>
+              <input id="join-code" required placeholder="paste code here"/>
+              <button type="submit">Join</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- LOBBY VIEW -->
+    <section id="view-lobby" class="view">
+      <div class="row between center">
+        <h2>Lobby — Room <span id="room-code"></span></h2>
+        <div>
+          <button id="copy-code-btn" class="ghost">Copy code</button>
+          <button id="leave-room-btn" class="ghost danger">Leave</button>
+        </div>
+      </div>
+      <div class="grid two fit-3-1">
+        <div class="card inset">
+          <h3>Players</h3>
+          <ul id="players-list" class="list"></ul>
+          <div id="host-controls" class="hide">
+            <button id="start-game-btn" class="primary">Start Game</button>
+            <p class="muted small">Min 2, max 4 players</p>
+          </div>
+        </div>
+        <div class="card inset">
+          <h3>Lobby Chat</h3>
+          <div id="chat-log" class="chat-log"></div>
+          <form id="chat-form" class="row gap">
+            <input id="chat-input" placeholder="Say something..." />
+            <button>Send</button>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <!-- GAME VIEW -->
+    <section id="view-game" class="view">
+      <div class="row between center">
+        <div class="row gap center">
+          <button id="exit-to-menu" class="ghost danger">Exit</button>
+          <h2>UNO — Room <span id="room-code-game"></span></h2>
+        </div>
+        <div class="row gap center">
+          <div class="pill">You: <span id="me-name-game"></span></div>
+          <div class="pill">Turn: <span id="turn-indicator"></span></div>
+        </div>
+      </div>
+
+      <div class="grid game-layout">
+        <!-- Opponents -->
+        <div id="opponents" class="opponents"></div>
+
+        <!-- Center area -->
+        <div class="center-area">
+          <div class="pile-area">
+            <div class="pile">
+              <div id="draw-pile" class="card-svg back"></div>
+              <div id="discard-pile" class="card-svg"></div>
+            </div>
+            <div class="row gap center">
+              <button id="draw-btn">Draw</button>
+              <button id="pass-btn" class="ghost">Pass</button>
+            </div>
+          </div>
+          <div id="effects" class="effects muted small"></div>
+        </div>
+
+        <!-- Hand -->
+        <div class="hand-area">
+          <div id="hand" class="hand"></div>
+        </div>
+
+        <!-- Sidebar chat -->
+        <div class="card inset sidebar">
+          <h3>Game Chat</h3>
+          <div id="chat-log-game" class="chat-log"></div>
+          <form id="chat-form-game" class="row gap">
+            <input id="chat-input-game" placeholder="Message..." />
+            <button>Send</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Color chooser modal -->
+      <dialog id="color-dialog">
+        <div class="card inset">
+          <h3>Choose a color</h3>
+          <div class="row gap center">
+            <button class="color-chip red" data-color="red">Red</button>
+            <button class="color-chip yellow" data-color="yellow">Yellow</button>
+            <button class="color-chip green" data-color="green">Green</button>
+            <button class="color-chip blue" data-color="blue">Blue</button>
+          </div>
+        </div>
+      </dialog>
+    </section>
+  </div>
+
+  <script type="module" src="main.js"></script>
+</body>
+</html>

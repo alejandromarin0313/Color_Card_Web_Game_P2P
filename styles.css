@@ -1,0 +1,53 @@
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial;background:#0b0f17;color:#e6ebf2}
+a{color:inherit}
+.view{display:none;padding:24px;max-width:1100px;margin:0 auto}
+.view.active{display:block}
+.card{background:#111827;border:1px solid #1f2937;border-radius:16px;padding:20px;box-shadow:0 10px 30px rgba(0,0,0,.3)}
+.card.inset{background:#0d1320}
+.row{display:flex;gap:12px}
+.row.center{align-items:center}
+.row.between{justify-content:space-between}
+.grid.two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid.two.fit-3-1{grid-template-columns:3fr 2fr}
+label{display:block;margin:6px 0 4px;color:#9aa5b1;font-size:.9rem}
+input{width:100%;padding:10px 12px;border-radius:10px;border:1px solid #253040;background:#0b1220;color:#e6ebf2}
+button{padding:10px 14px;border-radius:10px;border:1px solid #2b3a55;background:#1b2640;color:#e6ebf2;cursor:pointer}
+button:hover{filter:brightness(1.08)}
+button.ghost{background:transparent}
+button.danger{border-color:#5b2b2b;color:#ffb4b4}
+button.primary{background:#2441e6;border-color:#2a3be6}
+.small{font-size:.85rem}.muted{color:#9aa5b1}
+h1,h2,h3{margin:0 0 10px}
+.list{list-style:none;margin:0;padding:0}
+.list li{padding:8px 10px;margin:6px 0;background:#0b1220;border:1px solid #1e2a44;border-radius:10px}
+.chat-log{height:260px;overflow:auto;padding:10px;background:#060a12;border:1px solid #1a2340;border-radius:12px;margin-bottom:10px;white-space:pre-wrap}
+.pill{background:#0d1320;border:1px solid #1e2a44;border-radius:999px;padding:6px 10px}
+.hide{display:none}
+/* Game layout */
+.game-layout{display:grid;grid-template-columns:1fr 280px;grid-template-rows:min-content 1fr auto;gap:16px}
+.opponents{grid-column:1/2;display:flex;gap:12px;flex-wrap:wrap}
+.center-area{grid-column:1/2}
+.hand-area{grid-column:1/2}
+.sidebar{grid-column:2/3;grid-row:1/4}
+.pile{position:relative;height:200px;margin:10px 0}
+.pile .card-svg{position:absolute;top:0;left:0}
+.effects{min-height:24px;margin-top:8px}
+.hand{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;padding:10px;background:#0b1220;border:1px solid #1e2a44;border-radius:12px;min-height:140px}
+.card-svg{width:120px;height:180px;border-radius:14px;border:3px solid #0a0a0a;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:40px;color:#fff;box-shadow:0 8px 20px rgba(0,0,0,.4);user-select:none}
+.card-svg.small{width:64px;height:96px;font-size:20px}
+.card-svg.back{background:linear-gradient(135deg,#101a33,#1b2c5e);border-color:#0a1022}
+.card-red{background:linear-gradient(135deg,#c62828,#e53935)}
+.card-yellow{background:linear-gradient(135deg,#fbc02d,#ffeb3b);color:#222}
+.card-green{background:linear-gradient(135deg,#2e7d32,#43a047)}
+.card-blue{background:linear-gradient(135deg,#1565c0,#1e88e5)}
+.card-wild{background:conic-gradient(from 45deg, #e53935 0 25%, #ffeb3b 25% 50%, #43a047 50% 75%, #1e88e5 75% 100%);border-color:#222}
+.badge{font-size:12px;padding:2px 6px;border-radius:8px;background:#0b1220;border:1px solid #1e2a44;margin-left:6px}
+.color-chip{padding:12px 16px;border-radius:12px;border:2px solid #1e2a44}
+.color-chip.red{background:#c62828}.color-chip.yellow{background:#ffeb3b;color:#222}
+.color-chip.green{background:#2e7d32}.color-chip.blue{background:#1e88e5}
+/* Opponent panel */
+.opponent{background:#0b1220;border:1px solid #1e2a44;border-radius:12px;padding:10px;min-width:180px}
+.opponent .stack{display:flex;gap:6px;flex-wrap:wrap}
+.opponent .name{font-weight:700}
+.opponent .status{font-size:.8rem;color:#9aa5b1}
+.banner{background:#331a00;border:1px solid #5a2e00;color:#ffd7a1;padding:10px 14px;border-radius:10px;margin:10px 0}
