@@ -218,7 +218,10 @@ on(startBtn, 'click', () => {
   if (!state.isHost) return;
   if (state.players.length < 2) return alert('Need at least 2 players.');
   if (state.players.length > 4) return alert('Max 4 players.');
+
+ 
   state.game = createInitialGameState(state.players);
+  enterGameView();
   broadcast({ type: 'start', room: state.roomCode });
   pushFullState();
   for (const p of state.players) {
@@ -229,7 +232,6 @@ on(startBtn, 'click', () => {
       sendConn(conn, { type: 'myhand', hand: myHand });
     }
   }
-  enterGameView();
 });
 
 function refreshPlayersList() {
@@ -492,7 +494,15 @@ function renderGame() {
 
 function renderHand() {
   handDiv.innerHTML = '';
-  const myCards = state.isHost ? state.game.hands[state.peer.id] : (state.myHand || []);
+  const myCards = state.isHost
+    ? (state.game && state.game.hands && state.game.hands[state.peer?.id]) || []
+    : (state.myHand || []);
+
+  if (!Array.isArray(myCards)) {
+    console.warn('[renderHand] No hand yet for', state.isHost ? state.peer?.id : 'guest');
+    return;
+  }
+
   myCards.forEach((card, idx) => {
     const el = document.createElement('div');
     el.className = 'card-svg ' + cardCss(card);
@@ -503,6 +513,8 @@ function renderHand() {
     handDiv.appendChild(el);
   });
 }
+
+
 
 function cardCss(card) {
   if (card.color === 'wild') return 'card-wild';
