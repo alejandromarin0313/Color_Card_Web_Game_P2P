@@ -82,15 +82,20 @@ const joinForm = $('#join-form');
 const joinCodeInput = $('#join-code');
 
 on(createBtn, 'click', async () => {
-  await ensurePeer();
-  state.isHost = true;
+  state.isHost = true;                 // 1) primero
+  await ensurePeer();                  // 2) crea el Peer
   state.roomCode = state.peer.id;
   $('#room-code').textContent = state.roomCode;
   $('#host-controls').classList.remove('hide');
+
   await hostSetup();
+
+  // 3) Asegura que el host figure en el lobby (evita condiciones de carrera)
+  state.players = [{ id: state.peer.id, name: state.me.username }];
+  refreshPlayersList();
+
   setView('view-lobby');
   addSystemChat('Lobby created. Share the room code to invite others.');
-  refreshPlayersList();
 });
 
 on(joinForm, 'submit', async (e) => {
@@ -145,16 +150,27 @@ async function hostSetup() {
 
 // Guest: connect to host
 async function guestSetup(hostId) {
-  const conn = state.peer.connect(hostId);
-  conn.on('open', () => {
-    state.hostConn = conn;
-    conn.on('data', (msg) => handleMessage(conn, msg));
-    sendConn(conn, { type: 'join', name: state.me.username });
-  });
-  conn.on('close', () => {
-    addSystemChat('Disconnected from host.');
-  });
+  function connectNow() {
+    const conn = state.peer.connect(hostId);
+    conn.on('open', () => {
+      state.hostConn = conn;
+      conn.on('data', (msg) => handleMessage(conn, msg));
+      sendConn(conn, { type: 'join', name: state.me.username });
+    });
+    conn.on('error', (e) => {
+      console.error('Guest connection error:', e);
+      alert('Connection error (guest): ' + e.type);
+    });
+  }
+
+  // Si el peer ya está abierto, conecta; si no, espera al evento 'open'
+  if (state.peer?.open) {
+    connectNow();
+  } else {
+    state.peer.once('open', connectNow);
+  }
 }
+
 
 // Message helpers
 function sendConn(conn, data) { try { conn.send(data); } catch {} }
