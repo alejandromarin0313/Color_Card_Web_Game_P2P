@@ -11,7 +11,8 @@ const state = {
   conns: new Map(),    // peerId -> DataConnection (host's map). For guest: one connection to host.
   players: [],         // array of {id, name}
   // Game state (host authoritative)
-  game: null           // see createInitialGameState()
+  game: null,          // see createInitialGameState()
+  myId: null           // stable self id (frozen when peer opens)
 };
 
 // ---------- Helpers ----------
@@ -82,16 +83,16 @@ const joinForm = $('#join-form');
 const joinCodeInput = $('#join-code');
 
 on(createBtn, 'click', async () => {
-  state.isHost = true;                 // 1) primero
-  await ensurePeer(); 
-  state.myId = state.peer.id;                     // 2) crea el Peer
+  state.isHost = true;
+  await ensurePeer();
+  state.myId = state.peer.id;                 // ← fijar mi ID estable (host)
   state.roomCode = state.peer.id;
   $('#room-code').textContent = state.roomCode;
   $('#host-controls').classList.remove('hide');
 
   await hostSetup();
 
-
+  // asegurar que el host esté en la lista
   state.players = [{ id: state.peer.id, name: state.me.username }];
   refreshPlayersList();
 
@@ -149,10 +150,10 @@ async function hostSetup() {
   });
 }
 
-
+// Guest: connect to host
 async function guestSetup(hostId) {
   function connectNow() {
-    state.myId = state.peer.id;                  
+    state.myId = state.peer.id;               // ← fijar mi ID estable (guest)
     const conn = state.peer.connect(hostId);
     conn.on('open', () => {
       state.hostConn = conn;
@@ -167,9 +168,6 @@ async function guestSetup(hostId) {
   if (state.peer?.open) connectNow();
   else state.peer.once('open', connectNow);
 }
-
-
-
 
 // Message helpers
 function sendConn(conn, data) { try { conn.send(data); } catch {} }
@@ -218,13 +216,12 @@ on(startBtn, 'click', () => {
   if (state.players.length < 2) return alert('Need at least 2 players.');
   if (state.players.length > 4) return alert('Max 4 players.');
 
- 
   state.game = createInitialGameState(state.players);
-  enterGameView();
+  enterGameView();                                   // vista primero
   broadcast({ type: 'start', room: state.roomCode });
-  pushFullState();
+  pushFullState();                                   // luego render/estado
   for (const p of state.players) {
-    if (p.id === state.peer.id) continue;
+    if (p.id === state.myId) continue;               // skip host usando myId
     const conn = state.conns.get(p.id);
     if (conn) {
       const myHand = state.game.hands[p.id] || [];
@@ -236,8 +233,9 @@ on(startBtn, 'click', () => {
 function refreshPlayersList() {
   playersList.innerHTML = '';
   state.players.forEach(p => {
+    const isHostId = p.id === state.roomCode; // el host verdadero
     const li = document.createElement('li');
-    li.textContent = p.name + (p.id === state.peer?.id ? ' (host)' : '');
+    li.textContent = p.name + (isHostId ? ' (host)' : '');
     playersList.appendChild(li);
   });
 }
@@ -426,7 +424,7 @@ on($('#exit-to-menu'), 'click', () => {
 on(drawBtn, 'click', () => {
   if (!isMyTurn()) return alert('Not your turn.');
   if (state.isHost) {
-    hostDrawCard(state.myId);              
+    hostDrawCard(state.myId);
   } else {
     sendConn(state.hostConn, { type: 'action', action: 'draw' });
   }
@@ -435,12 +433,11 @@ on(drawBtn, 'click', () => {
 on(passBtn, 'click', () => {
   if (!isMyTurn()) return alert('Not your turn.');
   if (state.isHost) {
-    hostPass(state.myId);                  
+    hostPass(state.myId);
   } else {
     sendConn(state.hostConn, { type: 'action', action: 'pass' });
   }
 });
-
 
 function onGuestAction(conn, payload) {
   const { action, cardIndex, color } = payload;
@@ -474,16 +471,15 @@ function renderGame() {
 
   opponentsDiv.innerHTML = '';
   for (const p of state.game.players) {
-  if (p.id === state.myId) continue;
+    if (p.id === state.myId) continue; // no me muestres como oponente
     const box = document.createElement('div');
     box.className = 'opponent';
     const count = state.isHost ? state.game.hands[p.id].length : (state.game.hands[p.id]?.count ?? 0);
-    box.innerHTML = box.innerHTML = `
-  <div class="name">${p.name}</div>
-  <div class="status">${current.id===p.id?'Their turn':''}</div>
-  <div class="stack">${Array.from({length: count}).map(()=>'<div class="card-svg small back"></div>').join('')}</div>
-`;
-
+    box.innerHTML = `
+      <div class="name">${p.name}</div>
+      <div class="status">${current.id===p.id?'Their turn':''}</div>
+      <div class="stack">${Array.from({length: count}).map(()=>'<div class="card-svg small back"></div>').join('')}</div>
+    `;
     opponentsDiv.appendChild(box);
   }
 
@@ -515,10 +511,6 @@ function renderHand() {
   });
 }
 
-
-
-
-
 function cardCss(card) {
   if (card.color === 'wild') return 'card-wild';
   return 'card-' + card.color;
@@ -542,7 +534,7 @@ function tryPlayCard(index, card) {
         const chosen = btn.dataset.color;
         colorDialog.close();
         if (state.isHost) {
-          hostPlayCard(state.myId, index, chosen);  // <-- antes: state.peer.id
+          hostPlayCard(state.myId, index, chosen);
         } else {
           sendConn(state.hostConn, { type: 'action', action: 'play', cardIndex: index, color: chosen });
         }
@@ -550,13 +542,12 @@ function tryPlayCard(index, card) {
     });
   } else {
     if (state.isHost) {
-      hostPlayCard(state.myId, index, null);        // <-- antes: state.peer.id
+      hostPlayCard(state.myId, index, null);
     } else {
       sendConn(state.hostConn, { type: 'action', action: 'play', cardIndex: index });
     }
   }
 }
-
 
 function hostDrawCard(pid) {
   const g = state.game;
@@ -565,7 +556,7 @@ function hostDrawCard(pid) {
   if (!card) return;
   g.hands[pid].push(card);
   pushFullState();
-  if (pid !== state.peer.id) {
+  if (pid !== state.myId) {                         // ← comparar con myId
     const conn = state.conns.get(pid);
     if (conn) sendConn(conn, { type: 'myhand', hand: g.hands[pid] });
   }
@@ -586,7 +577,10 @@ function hostPlayCard(pid, index, chosenColor) {
   const hand = g.hands[pid];
   const card = hand[index];
   if (!card) return;
-  if (!canPlay(card, g)) return;
+  if (!canPlay(card, g)) {
+    alert('That card cannot be played on the current discard.');
+    return;
+  }
 
   hand.splice(index, 1);
   g.discardPile.push(card);
@@ -598,8 +592,16 @@ function hostPlayCard(pid, index, chosenColor) {
 
   let effectText = '';
   if (card.type === 'reverse') {
-    g.direction *= -1;
+  g.direction *= -1;
+  if (g.players.length === 2) {
+    // En partidas de 2 jugadores, Reverse actúa como Skip:
+    // damos 1 paso extra aquí; sumado al advanceTurn(g,1) del final,
+    // el total son 2 pasos → el turno regresa al mismo jugador.
+    advanceTurn(g, 1);
+    effectText = 'Reverse (2 players): acts as Skip!';
+  } else {
     effectText = 'Reverse!';
+  }
   } else if (card.type === 'skip') {
     advanceTurn(g, 1);
     effectText = 'Skip!';
@@ -625,7 +627,7 @@ function hostPlayCard(pid, index, chosenColor) {
   if (effectText) broadcast({ type: 'effect', text: effectText });
 
   for (const p of g.players) {
-    if (p.id === state.peer.id) continue;
+    if (p.id === state.myId) continue;              // ← skip host con myId
     const conn = state.conns.get(p.id);
     if (conn) sendConn(conn, { type: 'myhand', hand: g.hands[p.id] });
   }
@@ -637,7 +639,7 @@ function drawN(pid, n) {
     const c = state.game.deck.pop();
     if (c) state.game.hands[pid].push(c);
   }
-  if (pid !== state.peer.id) {
+  if (pid !== state.myId) {                         // ← comparar con myId
     const conn = state.conns.get(pid);
     if (conn) sendConn(conn, { type: 'myhand', hand: state.game.hands[pid] });
   }
