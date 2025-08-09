@@ -83,14 +83,15 @@ const joinCodeInput = $('#join-code');
 
 on(createBtn, 'click', async () => {
   state.isHost = true;                 // 1) primero
-  await ensurePeer();                  // 2) crea el Peer
+  await ensurePeer(); 
+  state.myId = state.peer.id;                     // 2) crea el Peer
   state.roomCode = state.peer.id;
   $('#room-code').textContent = state.roomCode;
   $('#host-controls').classList.remove('hide');
 
   await hostSetup();
 
-  // 3) Asegura que el host figure en el lobby (evita condiciones de carrera)
+
   state.players = [{ id: state.peer.id, name: state.me.username }];
   refreshPlayersList();
 
@@ -148,9 +149,10 @@ async function hostSetup() {
   });
 }
 
-// Guest: connect to host
+
 async function guestSetup(hostId) {
   function connectNow() {
+    state.myId = state.peer.id;                  
     const conn = state.peer.connect(hostId);
     conn.on('open', () => {
       state.hostConn = conn;
@@ -158,18 +160,15 @@ async function guestSetup(hostId) {
       sendConn(conn, { type: 'join', name: state.me.username });
     });
     conn.on('error', (e) => {
-      console.error('Guest connection error:', e);
-      alert('Connection error (guest): ' + e.type);
+      console.error('[guest] connection error:', e);
+      if (e?.type === 'peer-unavailable') setTimeout(connectNow, 1500);
     });
   }
-
-  // Si el peer ya está abierto, conecta; si no, espera al evento 'open'
-  if (state.peer?.open) {
-    connectNow();
-  } else {
-    state.peer.once('open', connectNow);
-  }
+  if (state.peer?.open) connectNow();
+  else state.peer.once('open', connectNow);
 }
+
+
 
 
 // Message helpers
@@ -454,7 +453,7 @@ function onGuestAction(conn, payload) {
 function isMyTurn() {
   if (!state.game) return false;
   const current = state.game.players[state.game.turnIndex];
-  return current.id === state.peer.id;
+  return current.id === state.myId;
 }
 
 function enterGameView() {
@@ -473,7 +472,7 @@ function renderGame() {
 
   opponentsDiv.innerHTML = '';
   for (const p of state.game.players) {
-    if (p.id === state.peer.id) continue;
+  if (p.id === state.myId) continue;
     const box = document.createElement('div');
     box.className = 'opponent';
     const count = state.isHost ? state.game.hands[p.id].length : (state.game.hands[p.id]?.count ?? 0);
@@ -495,11 +494,11 @@ function renderGame() {
 function renderHand() {
   handDiv.innerHTML = '';
   const myCards = state.isHost
-    ? (state.game && state.game.hands && state.game.hands[state.peer?.id]) || []
+    ? (state.game && state.game.hands && state.game.hands[state.myId]) || []
     : (state.myHand || []);
 
   if (!Array.isArray(myCards)) {
-    console.warn('[renderHand] No hand yet for', state.isHost ? state.peer?.id : 'guest');
+    console.warn('[renderHand] No hand yet for', state.isHost ? state.myId : 'guest');
     return;
   }
 
@@ -513,6 +512,8 @@ function renderHand() {
     handDiv.appendChild(el);
   });
 }
+
+
 
 
 
