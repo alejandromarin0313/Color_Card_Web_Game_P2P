@@ -426,19 +426,21 @@ on($('#exit-to-menu'), 'click', () => {
 on(drawBtn, 'click', () => {
   if (!isMyTurn()) return alert('Not your turn.');
   if (state.isHost) {
-    hostDrawCard(state.peer.id);
+    hostDrawCard(state.myId);              
   } else {
     sendConn(state.hostConn, { type: 'action', action: 'draw' });
   }
 });
+
 on(passBtn, 'click', () => {
   if (!isMyTurn()) return alert('Not your turn.');
   if (state.isHost) {
-    hostPass(state.peer.id);
+    hostPass(state.myId);                  
   } else {
     sendConn(state.hostConn, { type: 'action', action: 'pass' });
   }
 });
+
 
 function onGuestAction(conn, payload) {
   const { action, cardIndex, color } = payload;
@@ -540,7 +542,7 @@ function tryPlayCard(index, card) {
         const chosen = btn.dataset.color;
         colorDialog.close();
         if (state.isHost) {
-          hostPlayCard(state.peer.id, index, chosen);
+          hostPlayCard(state.myId, index, chosen);  // <-- antes: state.peer.id
         } else {
           sendConn(state.hostConn, { type: 'action', action: 'play', cardIndex: index, color: chosen });
         }
@@ -548,12 +550,13 @@ function tryPlayCard(index, card) {
     });
   } else {
     if (state.isHost) {
-      hostPlayCard(state.peer.id, index, null);
+      hostPlayCard(state.myId, index, null);        // <-- antes: state.peer.id
     } else {
       sendConn(state.hostConn, { type: 'action', action: 'play', cardIndex: index });
     }
   }
 }
+
 
 function hostDrawCard(pid) {
   const g = state.game;
